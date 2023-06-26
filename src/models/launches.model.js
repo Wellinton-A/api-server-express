@@ -1,36 +1,57 @@
-const launches = new Map()
+const launches = require('./launches.mongo')
+const planets = require('./planets.mongo')
 
-let latestFlightNmber = 0
+async function saveLaunch(launch) {
+  const planet = await planets.findOne({
+    keplerName: launch.target
+  })
+  if (planet) {
+    await launches.findOneAndUpdate({
+      flightNumber: launch.flightNumber
+    }, launch, {
+      upsert: true
+    })
+    return true
+  } else {
+    return false
+  }
+}
 
-function addNewLaunch(launch) {
-  latestFlightNmber++
-  launches.set(latestFlightNmber, Object.assign(launch, {
-    flightNumber: latestFlightNmber,
+async function addNewLaunch(launch) {
+  const countLaunches = (await launches.find({})).length
+  return {...launch,
+    flightNumber: countLaunches,
     upcoming: true,
     success: true,
     customers: ['WASC', 'My bad']
-  }))
-  console.log(launches)
+  }
 }
 
-function getAllLaunches() {
-  return Array.from(launches.values())
+async function getAllLaunches() {
+  return await await launches.find({}, {
+    "_id": false  })
 }
 
-function abortLaunchById(launchId) {
-  const aborted = launches.get(launchId)
-  console.log(aborted)
-  aborted.upcoming = false
-  aborted.success = false
-  return aborted
+async function abortLaunchById(launchId) {
+  const aborted = await launches.updateOne({
+    flightNumber: launchId
+  }, {
+    upcoming: false,
+    success: false
+  })
+
+  return aborted.modifiedCount === 1
 }
 
-function hasLaunchId(launchId) {
-  return launches.has(launchId)
+async function hasLaunchId(launchId) {
+  return await launches.findOne({
+    flightNumber: launchId
+  })
 }
 
 
 module.exports = {
+  saveLaunch,
   getAllLaunches,
   addNewLaunch,
   abortLaunchById,
