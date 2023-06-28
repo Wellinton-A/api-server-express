@@ -1,7 +1,8 @@
 const { getAllLaunches, addNewLaunch, hasLaunchId, abortLaunchById, saveLaunch } = require('../../models/launches.model')
 
 async function httpGetAllLaunches(req, res) {
-  res.status(200).json(await getAllLaunches())
+  const { limit, page } = req.query
+  res.status(200).json(await getAllLaunches(limit, page))
 }
 
 async function httpPostLaunch(req, res) {
@@ -23,7 +24,7 @@ async function httpPostLaunch(req, res) {
 
   const isNewLaunchValid = await saveLaunch(newLaunch)
 
-  if (!isNewLaunchValid) {
+  if (isNewLaunchValid === undefined) {
     return res.status(400).json({
       error: 'invalid target exoplanet.'
     })
